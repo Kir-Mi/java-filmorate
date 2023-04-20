@@ -31,7 +31,7 @@ public class UserController {
             log.warn(message);
             throw new ValidationException(message);
         }
-        if(user.getName() == null || user.getName().isBlank()){
+        if (user.getName() == null || user.getName().isBlank()) {
             user.setName(user.getLogin());
         }
         user.setId(userId);
@@ -43,7 +43,7 @@ public class UserController {
 
     @PutMapping
     public ResponseEntity<User> addOrUpdateUser(@Valid @RequestBody User user) {
-        if(user.getName().isBlank()){
+        if (user.getName().isBlank()) {
             user.setName(user.getLogin());
         }
         if (users.removeIf(existingUser -> existingUser.getId() == user.getId())) {

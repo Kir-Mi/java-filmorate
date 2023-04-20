@@ -44,7 +44,8 @@ public class FilmController {
         if (films.removeIf(existingFilm -> existingFilm.getId() == film.getId())) {
             films.add(film);
             log.info("Фильм обновлен: " + film);
-            return ResponseEntity.ok(film);        }
+            return ResponseEntity.ok(film);
+        }
         String message = "Такой фильм не существует: " + film;
         log.warn(message);
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(film);

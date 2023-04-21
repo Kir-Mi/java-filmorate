@@ -13,7 +13,7 @@ import javax.validation.ConstraintViolationException;
 public class ControllerExceptionHandler {
 
     @ExceptionHandler(ValidationException.class)
-    public ResponseEntity<String> ValidationException(Exception ex) {
+    public ResponseEntity<String> validationException(Exception ex) {
         String message = "Ошибка запроса: " + ex.getMessage();
         log.warn(message, ex);
         return ResponseEntity.badRequest().body(message);

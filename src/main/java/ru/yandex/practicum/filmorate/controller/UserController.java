@@ -7,7 +7,6 @@ import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exceptions.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 
-import javax.validation.ConstraintViolationException;
 import javax.validation.Valid;
 import java.util.HashSet;
 import java.util.Set;
@@ -55,12 +54,5 @@ public class UserController {
         String message = "Такой пользователь не существует: " + user;
         log.warn(message);
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(user);
-    }
-
-    @ExceptionHandler({ValidationException.class, ConstraintViolationException.class})
-    public ResponseEntity<String> handleException(Exception ex) {
-        String message = "Ошибка валидации: " + ex.getMessage();
-        log.warn(message, ex);
-        return ResponseEntity.badRequest().body(message);
     }
 }

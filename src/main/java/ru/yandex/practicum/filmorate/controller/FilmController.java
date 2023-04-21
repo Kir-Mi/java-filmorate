@@ -7,7 +7,6 @@ import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exceptions.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 
-import javax.validation.ConstraintViolationException;
 import javax.validation.Valid;
 import java.util.HashSet;
 import java.util.Set;
@@ -49,12 +48,5 @@ public class FilmController {
         String message = "Такой фильм не существует: " + film;
         log.warn(message);
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(film);
-    }
-
-    @ExceptionHandler({ValidationException.class, RuntimeException.class, ConstraintViolationException.class})
-    public ResponseEntity<String> handleException(Exception ex) {
-        String message = "Ошибка валидации: " + ex.getMessage();
-        log.warn(message, ex);
-        return ResponseEntity.badRequest().body(message);
     }
 }

@@ -8,7 +8,6 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Past;
 import javax.validation.constraints.Pattern;
 import java.time.LocalDate;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -26,15 +25,15 @@ public class User {
     private LocalDate birthday;
     private Set<Integer> friends = new HashSet<>();
 
-    public void addFriend(Integer id){
+    public void addFriend(Integer id) {
         friends.add(id);
     }
 
-    public void removeFriend(Integer id){
+    public void removeFriend(Integer id) {
         friends.remove(id);
     }
 
-    public Set<Integer> findFriends(){
+    public Set<Integer> findFriends() {
         return friends;
     }
 }

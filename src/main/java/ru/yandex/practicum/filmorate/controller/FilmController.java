@@ -1,52 +1,57 @@
 package ru.yandex.practicum.filmorate.controller;
 
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import ru.yandex.practicum.filmorate.exceptions.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.service.FilmService;
 
 import javax.validation.Valid;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.Collection;
+import java.util.List;
 
 @RestController
 @RequestMapping("/films")
-@Slf4j
 public class FilmController {
+    private final FilmService filmService;
 
-    private Set<Film> films = new HashSet<>();
-    private int filmId = 1;
+    @Autowired
+    public FilmController(FilmService filmService) {
+        this.filmService = filmService;
+    }
 
     @GetMapping
-    public Set<Film> getFilms() {
-        return films;
+    public Collection<Film> getFilms() {
+        return filmService.getFilms();
     }
 
     @PostMapping
     public Film addFilm(@Valid @RequestBody Film film) {
-        if (films.contains(film)) {
-            String message = "Такой фильм уже существует: " + film;
-            log.warn(message);
-            throw new ValidationException(message);
-        }
-        film.setId(filmId);
-        films.add(film);
-        log.info("Добавлен новый фильм: " + film);
-        filmId++;
-        return film;
+        return filmService.addFilm(film);
     }
 
     @PutMapping
-    public ResponseEntity<Film> addOrUpdateFilm(@Valid @RequestBody Film film) {
-        if (films.removeIf(existingFilm -> existingFilm.getId() == film.getId())) {
-            films.add(film);
-            log.info("Фильм обновлен: " + film);
-            return ResponseEntity.ok(film);
-        }
-        String message = "Такой фильм не существует: " + film;
-        log.warn(message);
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(film);
+    public ResponseEntity<Film> updateFilm(@Valid @RequestBody Film film) {
+        return filmService.updateFilm(film);
+    }
+
+    @GetMapping("/{id}")
+    public Film getFilmById(@PathVariable int id) {
+        return filmService.getFilmById(id);
+    }
+
+    @PutMapping("/{id}/like/{userId}")
+    public void addLike(@PathVariable int id, @PathVariable int userId) {
+        filmService.addLike(id, userId);
+    }
+
+    @DeleteMapping("/{id}/like/{userId}")
+    public void deleteLike(@PathVariable int id, @PathVariable int userId) {
+        filmService.deleteLike(id, userId);
+    }
+
+    @GetMapping("popular")
+    public List<Film> findPopularFilms(@RequestParam(value = "count", defaultValue = "10", required = false) Integer count) {
+        return filmService.findPopularFilms(count);
     }
 }

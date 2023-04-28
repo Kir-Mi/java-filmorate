@@ -33,7 +33,7 @@ public class Film {
         return likes.contains(userId);
     }
 
-    public int getFilmRate(){
+    public int getFilmRate() {
         return likes.size();
     }
 }

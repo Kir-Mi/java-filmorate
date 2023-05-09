@@ -1,58 +1,61 @@
 package ru.yandex.practicum.filmorate.controller;
 
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import ru.yandex.practicum.filmorate.exceptions.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.UserService;
 
 import javax.validation.Valid;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.Collection;
 
 @RestController
 @RequestMapping("/users")
-@Slf4j
 public class UserController {
-    private Set<User> users = new HashSet<>();
-    private int userId = 1;
+    private final UserService userService;
+
+    @Autowired
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
 
     @GetMapping
-    public Set<User> getUsers() {
-        return users;
+    public Collection<User> getUsers() {
+        return userService.getUsers();
     }
 
     @PostMapping
     public User addUser(@Valid @RequestBody User user) {
-        if (users.contains(user)) {
-            String message = "Такой пользователь уже существует: " + user;
-            log.warn(message);
-            throw new ValidationException(message);
-        }
-        if (user.getName() == null || user.getName().isBlank()) {
-            user.setName(user.getLogin());
-        }
-        user.setId(userId);
-        users.add(user);
-        log.info("Добавлен новый пользователь: " + user);
-        userId++;
-        return user;
+        return userService.addUser(user);
     }
 
     @PutMapping
-    public ResponseEntity<User> addOrUpdateUser(@Valid @RequestBody User user) {
-        if (user.getName().isBlank()) {
-            user.setName(user.getLogin());
-        }
-        if (users.removeIf(existingUser -> existingUser.getId() == user.getId())) {
-            users.add(user);
-            log.info("Пользователь обновлен: " + user);
-            return ResponseEntity.ok(user);
-        }
+    public ResponseEntity<User> updateUser(@Valid @RequestBody User user) {
+        return userService.updateUser(user);
+    }
 
-        String message = "Такой пользователь не существует: " + user;
-        log.warn(message);
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(user);
+    @GetMapping("/{id}")
+    public User getUserById(@PathVariable int id) {
+        return userService.getUserById(id);
+    }
+
+    @PutMapping("/{id}/friends/{friendId}")
+    public void addAsFriend(@PathVariable int id, @PathVariable int friendId) {
+        userService.addAsFriend(id, friendId);
+    }
+
+    @DeleteMapping("/{id}/friends/{friendId}")
+    public User removeFromFriends(@PathVariable int id, @PathVariable int friendId) {
+        return userService.removeFromFriends(id, friendId);
+    }
+
+    @GetMapping("/{id}/friends")
+    public Collection<User> findFriends(@PathVariable int id) {
+        return userService.findFriends(id);
+    }
+
+    @GetMapping("/{id}/friends/common/{otherId}")
+    public Collection<User> findCommonFriends(@PathVariable int id, @PathVariable int otherId) {
+        return userService.findCommonFriends(id, otherId);
     }
 }

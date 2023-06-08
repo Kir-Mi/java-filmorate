@@ -24,24 +24,4 @@ public class Film {
     private Mpa mpa;
     private List<Genre> genres;
     private Set<Integer> likes;
-
-    public void addLike(Integer userId) {
-        likes.add(userId);
-    }
-
-    public void deleteLike(Integer userId) {
-        likes.remove(userId);
-    }
-
-    public boolean hasLikeFromUser(int userId) {
-        return likes.contains(userId);
-    }
-
-    public int getFilmRate() {
-        if (likes != null) {
-            return likes.size();
-        } else {
-            return 0;
-        }
-    }
 }

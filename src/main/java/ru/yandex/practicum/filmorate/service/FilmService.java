@@ -29,10 +29,12 @@ public class FilmService {
     public List<Film> getFilms() {
         List<Film> films = filmStorage.getFilms();
         films.forEach(film -> {
-            film.setGenres(filmGenreStorage.getGenresByFilm(film.getId()).stream()
-                    .map(genreStorage::get)
-                    .collect(Collectors.toList()));
-            film.setLikes(likesStorage.get(film.getId()));
+            if (film != null) {
+                film.setGenres(filmGenreStorage.getGenresByFilm(film.getId()).stream()
+                        .map(genreStorage::get)
+                        .collect(Collectors.toList()));
+                film.setLikes(likesStorage.get(film.getId()));
+            }
         });
         return films;
     }
@@ -106,7 +108,7 @@ public class FilmService {
 
     public List<Film> findPopularFilms(Integer count) {
         return filmStorage.getFilms().stream()
-                .sorted(Comparator.comparing(Film::getFilmRate).reversed())
+                .sorted(Comparator.comparing((Film film) -> film.getLikes().size()).reversed())
                 .limit(count)
                 .collect(Collectors.toList());
     }

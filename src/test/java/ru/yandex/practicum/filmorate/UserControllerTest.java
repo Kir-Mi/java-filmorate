@@ -17,6 +17,7 @@ import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.UserService;
 
 import java.time.LocalDate;
+import java.util.Set;
 
 @ExtendWith(SpringExtension.class)
 @WebMvcTest(UserController.class)
@@ -27,7 +28,7 @@ public class UserControllerTest {
     private ObjectMapper objectMapper;
     @MockBean
     UserService userService;
-    User user = new User();
+    User user = User.builder().build();
 
     @BeforeEach
     public void setUp() {
@@ -35,6 +36,7 @@ public class UserControllerTest {
         user.setLogin("TestLogin");
         user.setEmail("123@ya.ru");
         user.setBirthday(LocalDate.of(2000, 01, 01));
+        user.setFriends(Set.of(2));
     }
 
     @Test

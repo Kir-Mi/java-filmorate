@@ -14,9 +14,11 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import ru.yandex.practicum.filmorate.controller.FilmController;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.service.FilmService;
 
 import java.time.LocalDate;
+import java.util.Set;
 
 @ExtendWith(SpringExtension.class)
 @WebMvcTest(FilmController.class)
@@ -29,7 +31,7 @@ class FilmControllerTest {
     @MockBean
     FilmService filmService;
 
-    Film film = new Film();
+    Film film = Film.builder().build();
 
     @BeforeEach
     public void setUp() {
@@ -37,6 +39,8 @@ class FilmControllerTest {
         film.setDescription("Test Description");
         film.setReleaseDate(LocalDate.of(2022, 1, 1));
         film.setDuration(90);
+        film.setMpa(Mpa.builder().id(1).name("G").build());
+        film.setLikes(Set.of(1));
     }
 
     @Test

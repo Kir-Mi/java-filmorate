@@ -1,46 +1,54 @@
 package ru.yandex.practicum.filmorate.service;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
+import ru.yandex.practicum.filmorate.exceptions.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.FriendsStorage;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.time.LocalDate;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class UserService {
     private final UserStorage userStorage;
-    private int userId = 1;
-
-
-    public UserService(UserStorage userStorage) {
-        this.userStorage = userStorage;
-    }
+    private final FriendsStorage friendsStorage;
 
     public Collection<User> getUsers() {
         return userStorage.getUsers();
     }
 
     public User addUser(User user) {
-        if (user.getName() == null || user.getName().isBlank()) {
-            user.setName(user.getLogin());
+        if (!isUserValid(user)) {
+            throw new ValidationException("Некорректные данные пользователя.", HttpStatus.BAD_REQUEST);
         }
-        user.setId(userId);
         userStorage.addUser(user);
-        userId++;
+        if (user.getFriends() != null) {
+            friendsStorage.update(user.getId(), user.getFriends());
+        }
         return user;
     }
 
-    public ResponseEntity<User> updateUser(User user) {
-        return userStorage.updateUser(user);
+    public User updateUser(User user) {
+        if (!isUserValid(user)) {
+            throw new ValidationException("Некорректные данные пользователя.", HttpStatus.BAD_REQUEST);
+        }
+        try {
+            userStorage.updateUser(user);
+            if (user.getFriends() != null) {
+                friendsStorage.update(user.getId(), user.getFriends());
+            }
+        } catch (Exception e) {
+            throw new NotFoundException(String.format("Пользователь не найден в БД USERS, id=%s.", user.getId()), HttpStatus.NOT_FOUND);
+        }
+        return user;
     }
 
     public User getUserById(int id) {
@@ -49,53 +57,69 @@ public class UserService {
             log.warn("Юзер с id = {} не найден", id);
             throw new NotFoundException("Юзер не найден", HttpStatus.NOT_FOUND);
         }
+        user.setFriends(friendsStorage.getFriends(id));
         return user;
     }
 
     public void addAsFriend(int id, int friendId) {
         User user = userStorage.getUserById(id);
-        User user2 = userStorage.getUserById(friendId);
-        if (user == null || user2 == null) {
-            log.warn("Параметр id пуст");
-            throw new NotFoundException("Поле id не найдено", HttpStatus.NOT_FOUND);
+        User friend = userStorage.getUserById(friendId);
+        if (user == null || friend == null) {
+            log.warn("Юзер не найден");
+            throw new NotFoundException(String.format("Пользователь не найден в БД USERS, id=%s.", id), HttpStatus.NOT_FOUND);
         }
-        user.addFriend(friendId);
-        user2.addFriend(id);
+        friendsStorage.add(id, friendId);
     }
 
     public User removeFromFriends(int id, int friendId) {
         User user = userStorage.getUserById(id);
-        User user2 = userStorage.getUserById(friendId);
-        if (user == null || user2 == null) {
-            log.warn("Параметр id пуст");
+        User friend = userStorage.getUserById(friendId);
+        if (user == null || friend == null) {
+            log.warn("Юзер не найден");
             throw new NotFoundException("Юзер не найден", HttpStatus.NOT_FOUND);
         }
-        if (!user.getFriends().contains(friendId) || !user2.getFriends().contains(id)) {
-            log.warn("Юзеры не были в друзьях");
-            throw new NotFoundException("Нет в списке друзей", HttpStatus.NOT_FOUND);
-        }
-        user.getFriends().remove(friendId);
-        user2.getFriends().remove(id);
-        return user2;
+        friendsStorage.remove(id, friendId);
+        return friend;
     }
 
     public Collection<User> findFriends(int id) {
-        Collection<User> friends = new ArrayList<>();
-        for (Integer friendId : userStorage.getUserById(id).findFriends()) {
-            if (userStorage.getUserById(friendId) != null) {
-                friends.add(userStorage.getUserById(friendId));
-            }
-        }
+        if (userStorage.getUserById(id) == null)
+            throw new NotFoundException(String.format("userId=%s не найден.", id), HttpStatus.NOT_FOUND);
+        List<User> friends = friendsStorage.getFriends(id).stream()
+                .map(userStorage::getUserById)
+                .collect(Collectors.toList());
+        friends.forEach(user -> user.setFriends(friendsStorage.getFriends(user.getId())));
         return friends;
     }
 
     public Collection<User> findCommonFriends(int id, int otherId) {
-        Set<Integer> friends1 = userStorage.getUserById(id).findFriends();
-        Set<Integer> friends2 = userStorage.getUserById(otherId).findFriends();
-        Set<Integer> commonFriendsId = new HashSet<>(friends1);
-        commonFriendsId.retainAll(friends2);
-        return commonFriendsId.stream()
+        User friend1 = userStorage.getUserById(id);
+        User friend2 = userStorage.getUserById(otherId);
+        if (friend1 == null || friend2 == null) {
+            throw new NotFoundException("Пользователь не найден", HttpStatus.NOT_FOUND);
+        }
+        List<User> friends = friendsStorage.getCommonFriends(id, otherId).stream()
                 .map(userStorage::getUserById)
                 .collect(Collectors.toList());
+        friends.forEach(user -> user.setFriends(friendsStorage.getFriends(user.getId())));
+        return friends;
+    }
+
+    private boolean isUserValid(User u) {
+        if (u == null ||
+                u.getLogin() == null ||
+                u.getEmail() == null ||
+                u.getBirthday() == null ||
+                u.getEmail().isBlank() || !u.getEmail().contains("@") ||
+                u.getLogin().isBlank() || u.getLogin().contains(" ") ||
+                u.getBirthday().isAfter(LocalDate.now())
+        ) {
+            return false;
+        } else {
+            if (u.getName() == null || u.getName().isBlank()) {
+                u.setName(u.getLogin());
+            }
+            return true;
+        }
     }
 }
